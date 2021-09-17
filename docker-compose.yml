@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+  api:
+    build:
+      args: 
+        user: aplication
+        uid: 1000
+      context: ./config/api
+      dockerfile: ./Dockerfile
+    container_name: api
+    restart: unless-stopped
+    working_dir: /var/www
+    ports:
+      - 80:80
+    volumes:
+      - ./www/api:/var/www/api:delegated
+      - ./config/api/apache/api.conf:/etc/apache2/sites-enabled/000-default.conf:delegated
+    depends_on: 
+      - redis
+      - queue
+    networks: 
+      - my-app
+
+  # queue
+  queue:
+    build: 
+      args: 
+        user: aplication
+        uid: 1000
+      context: ./config/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    image: laravel-queue-test
+    command: "php artisan queue:work"
+    volumes: 
+      - ./www/api:/var/www/api:delegated
+    depends_on: 
+      - redis
+    networks: 
+      - my-app
+
+  # redis
+  redis:
+    image: redis:latest
+    networks: 
+      - my-app
+
+networks: 
+  my-app:
+    driver: bridge
+  # ui:
+  #   build:
+  #     context: ./config/ui
+  #     dockerfile: ./Dockerfile
+  #   container_name: invest-ui
+  #   restart: always
+  #   volumes:
+  #     - ./www/ui:/app
+  #   working_dir: /app
+  #   ports:
+  #     - 3000:8080
+  #   command: ['yarn', 'serve']
+
+
